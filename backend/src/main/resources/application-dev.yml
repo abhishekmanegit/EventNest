@@ -1,0 +1,29 @@
+# Dev profile: local Postgres on Windows reached from WSL, plus the demo dataset
+# (admin account, colleges, students, organizers, ~40 events).
+#
+# Activate with:  ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+spring:
+  jpa:
+    show-sql: false
+
+app:
+  notifications:
+    # Safe in dev: the reminder scheduler will start creating notifications.
+    enabled: true
+  seed:
+    # Demo accounts only. Never enable this outside dev.
+    enabled: true
+    admin-email: admin@eventnest.dev
+    admin-password: Admin@12345
+    organizer-email: rahul@xyz.edu.in
+    organizer-password: Organizer@123
+    student-email: abhishek@student.edu.in
+    student-password: Student@123
+  ai:
+    enabled: false
+    api-key: ""
+
+logging:
+  level:
+    com.eventnest: DEBUG
+    org.springframework.security: INFO

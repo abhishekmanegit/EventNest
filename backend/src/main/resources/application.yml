@@ -1,0 +1,124 @@
+spring:
+  application:
+    name: eventnest-api
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/eventnest}
+    username: ${DB_USERNAME:eventnest_app}
+    password: ${DB_PASSWORD:eventnest_local_dev}
+    hikari:
+      # Pool sizing: a rough rule is (2-4) x CPU cores for a Postgres-backed app.
+      # 10 is generous for a single-instance MVP and cheap to tune from metrics later.
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 10000
+
+  jpa:
+    hibernate:
+      # D3: never 'update'. Flyway owns the schema; Hibernate only verifies that
+      # the entities match it. 'update' would silently mutate a dev database and
+      # produce schema drift that breaks on prod.
+      ddl-auto: validate
+    # Lazy loading outside an open session is the classic "could not initialize
+    # proxy - no Session is currently in progress" crash. Closing the session
+    # after each transaction makes that bug impossible and forces us to map DTOs
+    # properly (D2). The cost: no accidental N+1 queries.
+    open-in-view: false
+    properties:
+      hibernate:
+        # Store timestamps in UTC; convert to local only for display. Without
+        # this, a server timezone change silently shifts every deadline.
+        jdbc:
+          time_zone: UTC
+          batch_size: 30
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+
+  flyway:
+    enabled: true
+    # Lets Flyway adopt an existing non-empty schema instead of failing.
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    # Never leak exception messages through the default error page.
+    include-message: never
+    include-stacktrace: never
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ---------------------------------------------------------------------------
+# Application-specific configuration. Every value is overridable by an
+# environment variable so no secret is ever committed (see .env.example).
+# ---------------------------------------------------------------------------
+app:
+  brand:
+    name: EventNest
+    tagline: Discover college events. Register before the deadline.
+  jwt:
+    # HS256 requires at least a 256-bit key. Override this in ANY deployed
+    # environment:  EVENTNEST_JWT_SECRET=<64+ random characters>
+    secret: ${EVENTNEST_JWT_SECRET:dEV0nLy_0nLy_changeMe_devOnly_secret_key_0123456789abcdefXYZ}
+    issuer: eventnest
+    access-token-ttl: 15m
+    refresh-token-ttl-days: 7
+  storage:
+    local-path: ${EVENTNEST_STORAGE_PATH:./uploads}
+    public-base-url: /api/v1/files
+    max-file-size-bytes: 5242880
+  cors:
+    allowed-origins: ${EVENTNEST_CORS_ORIGINS:http://localhost:5173}
+  notifications:
+    # The reminder scheduler only runs when explicitly enabled, so tests and
+    # production-like runs are never surprised by background writes.
+    enabled: ${EVENTNEST_NOTIFICATIONS_ENABLED:false}
+  moderation:
+    # D19: a college is verified once, then publishes directly. This flag exists
+    # so a single college can be put into reviewed mode without a migration.
+    default-required: false
+  seed:
+    # Demo accounts + events. Off by default and only honoured on the dev profile,
+    # so a production deploy can never be seeded with known passwords.
+    enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.eventnest: DEBUG
+    org.hibernate.SQL: WARN
+    org.flywaydb: INFO
+  ai:
+    enabled: false
+    api-key: ""
+    base-url: "https://api.groq.com/openai/v1"
+    model: "llama-3.1-8b-instant"
+    temperature: 0.2
+    max-tokens: 256
+    timeout-ms: 30000

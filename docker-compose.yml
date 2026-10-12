@@ -1,0 +1,67 @@
+# EventNest – one-command full stack.
+#
+#   docker compose up --build
+#   UI       → http://localhost:8081   (nginx serves the Vite bundle, proxies /api)
+#   API      → http://localhost:8080   (Swagger UI at /swagger-ui.html)
+#
+# The database schema is migrated by Flyway on backend start, so the first boot
+# takes a little while. Uploads and Postgres data survive `down` in named volumes.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-eventnest}
+      POSTGRES_USER: ${POSTGRES_USER:-eventnest_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eventnest_local_dev}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eventnest_app} -d ${POSTGRES_DB:-eventnest}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      SERVER_PORT: 8080
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-eventnest}
+      DB_USERNAME: ${POSTGRES_USER:-eventnest_app}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-eventnest_local_dev}
+      # Override in any real deployment with a long random value:
+      #   EVENTNEST_JWT_SECRET=<64+ chars>
+      EVENTNEST_JWT_SECRET: ${EVENTNEST_JWT_SECRET:-replaceMe_onlyForLocalDocker_0123456789abcdef0123456789abcdef}
+      EVENTNEST_STORAGE_PATH: /app/uploads
+      EVENTNEST_CORS_ORIGINS: http://localhost:8081
+      EVENTNEST_NOTIFICATIONS_ENABLED: "true"
+      # Uncomment to boot with the demo college events + seeded accounts:
+      # SPRING_PROFILES_ACTIVE: dev
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8081:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads:

@@ -1,0 +1,29 @@
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/*.log
+
+# Java / Maven
+backend/target/
+*.class
+*.jar
+!backend/scripts/*.jar
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Runtime
+uploads/events/*/images/
+*.pid
+
+# Test artifacts
+frontend/smoke-results.txt
