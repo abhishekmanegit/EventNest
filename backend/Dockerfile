@@ -19,4 +19,4 @@ ENV SERVER_PORT=8080 \
     JAVA_OPTS="-XX:MaxRAMPercentage=75"
 HEALTHCHECK --interval=20s --timeout=5s --start-period=60s --retries=5 \
   CMD curl -fsS http://localhost:8080/actuator/health || exit 1
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT:-8080} -jar app.jar"]
