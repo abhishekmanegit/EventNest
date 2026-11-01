@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
-import { apiClient, setAuth, onAuthChange, isAuthed, rehydrateSession, getAuth } from "../services/apiClient";
+import { setAuth, onAuthChange, isAuthed, rehydrateSession, getAuth } from "../services/apiClient";
 
 /**
  * Auth holds { user, ready }. Tokens live in apiClient (memory + localStorage);
@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try {
-      const { refreshToken } = apiClient.getAuth();
+      const { refreshToken } = getAuth();
       if (refreshToken) await api.auth.logout(refreshToken);
     } catch { /* logout must not be able to fail visibly */ }
     setAuth({});
