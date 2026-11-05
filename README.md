@@ -132,7 +132,7 @@ cd frontend && node smoke.mjs
 The backend reads everything from environment variables (see `application.yml`); none of
 the committed defaults are secrets.
 
-| Variable | Default (dev) | Purpose |
+| Variables | Default (dev) | Purpose |
 |----------|---------------|---------|
 | `DB_URL` | `jdbc:postgresql://localhost:5432/eventnest` | JDBC URL |
 | `DB_USERNAME` / `DB_PASSWORD` | `eventnest_app` / `eventnest_local_dev` | DB credentials |
